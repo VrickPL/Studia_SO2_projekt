@@ -5,6 +5,23 @@
 
 using namespace std;
 
+class Lock {
+    atomic_flag flag = ATOMIC_FLAG_INIT;
+
+public:
+    void lock() {
+        while(flag.test_and_set(memory_order_acquire)) {
+            this_thread::sleep_for(1ms);
+        }
+    }
+
+    void unlock() {
+        flag.clear(memory_order_release);
+    }
+};
+
+Lock coutLock;
+
 struct Fork {
 private:
     atomic<bool> available;
@@ -36,7 +53,11 @@ struct Philosopher {
             think();
 
             while (true) {
-                cout << "Philosopher " << id << " is trying to acquire forks." << endl;
+                {
+                    coutLock.lock();
+                    cout << "Philosopher " << id << " is trying to acquire forks." << endl;
+                    coutLock.unlock();
+                }
 
                 //avoiding deadlock by assigning the forks in a different order for each philosopher
                 bool gotLeft = false, gotRight = false;
@@ -67,13 +88,25 @@ struct Philosopher {
     }
 
     void eat() {
-        cout << "Philosopher " << id << " starts eating." << endl;
+        {
+            coutLock.lock();
+            cout << "Philosopher " << id << " starts eating." << endl;
+            coutLock.unlock();
+        }
         sleep();
-        cout << "Philosopher " << id << " finishes eating." << endl;
+        {
+            coutLock.lock();
+            cout << "Philosopher " << id << " finishes eating." << endl;
+            coutLock.unlock();
+        }
     }
 
     void think() {
-        cout << "Philosopher " << id << " is thinking." << endl;
+        {
+            coutLock.lock();
+            cout << "Philosopher " << id << " is thinking." << endl;
+            coutLock.unlock();
+        }
         sleep();
     }
 
