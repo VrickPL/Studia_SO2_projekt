@@ -3,7 +3,7 @@
 
 
 
-## Table of Contents 
+## Spis treści
 - [Uruchomienie projektu](#uruchomienie-projektu)
 - [Opis problemu](#opis-problemu)
 - [Opis wątków](#opis-watkow)
