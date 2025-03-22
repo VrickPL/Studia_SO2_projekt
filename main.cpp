@@ -2,8 +2,11 @@
 #include <vector>
 #include <atomic>
 #include <thread>
+#include <chrono>
+#include <cstdlib>
 
 using namespace std;
+using namespace std::chrono;
 
 class Lock {
     atomic_flag flag = ATOMIC_FLAG_INIT;
@@ -117,8 +120,17 @@ struct Philosopher {
 
 int Philosopher::next_id = 0;
 
-int main() {
-    int numPhilosophers = 3;
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        cerr << "Brak liczby filozofów. Użyj: " << argv[0] << " [liczba_filozofów]." << endl;
+        return 1;
+    }
+    
+    int numPhilosophers = atoi(argv[1]);
+    if (numPhilosophers < 2) {
+        cerr << "Program wymaga co najmniej 2 filozofów." << endl;
+        return 1;
+    }
     
     vector<Fork> forks(numPhilosophers);
 
