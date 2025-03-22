@@ -1,12 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <atomic>
+#include <thread>
 
 using namespace std;
 
 struct Fork {
 private:
-    std::atomic<bool> available;
+    atomic<bool> available;
 
 public:
     Fork() : available(true) { }
@@ -30,6 +31,41 @@ struct Philosopher {
     Philosopher(Fork* left, Fork* right)
         : id(next_id++), leftFork(left), rightFork(right) { }
 
+    void dine() {
+        for (int i = 0; i < 3; i++) {
+            think();
+
+            while (true) {
+                cout << "Philosopher " << id << " is trying to acquire forks." << endl;
+
+                //avoiding deadlock by assigning the forks in a different order for each philosopher
+                bool gotLeft = false, gotRight = false;
+                if (id % 2 == 0) {
+                    gotLeft = leftFork->acquire();
+                    gotRight = rightFork->acquire();
+                } else {
+                    gotRight = rightFork->acquire();
+                    gotLeft = leftFork->acquire();
+                }
+
+                if (gotLeft && gotRight) {
+                    eat();
+                    leftFork->release();
+                    rightFork->release();
+                    break;
+                } else {
+                    if (gotLeft) {
+                        leftFork->release();
+                    }
+                    if (gotRight) {
+                        rightFork->release();
+                    }
+                    this_thread::sleep_for(500ms);
+                }
+            }
+        }
+    }
+
     void eat() {
         cout << "Philosopher " << id << " starts eating." << endl;
         sleep();
@@ -42,15 +78,14 @@ struct Philosopher {
     }
 
     void sleep() {
-        // TODO: implement
+        this_thread::sleep_for(2000ms);
     }
 };
 
 int Philosopher::next_id = 0;
 
 int main() {
-    cout << "Hello, World!" << endl;
-    int numPhilosophers = 5;
+    int numPhilosophers = 3;
     
     vector<Fork> forks(numPhilosophers);
 
@@ -63,8 +98,14 @@ int main() {
         philosophers.push_back(philosopher);
     }
 
-    philosophers[0].eat();
-    philosophers[0].think();
+    vector<thread> threads;
+    for (int i = 0; i < numPhilosophers; i++) {
+        threads.push_back(thread(&Philosopher::dine, &philosophers[i]));
+    }
+
+    for (thread &t : threads) {
+        t.join();
+    }
 
     return 0;
 }
